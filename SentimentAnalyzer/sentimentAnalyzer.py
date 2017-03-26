@@ -1,26 +1,52 @@
+import os.path
 import sys
 import pandas
+import numpy as np
 from bs4 import BeautifulSoup as BS
 import re
 from nltk.corpus import stopwords  # Import the stop word list
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.ensemble import RandomForestClassifier
 
 # prepare data for learning
 def main():
     trainingIterations = 100
-    trainingDataset = getPandasDataset('../Data/labeledTrainData.tsv', "\t")
-    cleanedTrainingData = []
-    for i in range(0, trainingDataset["review"].size):
-        cleanedTrainingData.append(cleanDataset(trainingDataset["review"][i]))
-        if (i + 1) % 500 == 0:
-            print("cleaned review %i of %i" % ((i + 1), trainingDataset['review'].size))
+    if os.path.exists("../Data/labeledCleanedTrainData.tsv"):
+        trainingDataset = getPandasDataset('../Data/labeledTrainData.tsv', "\t")
+        cleanedTrainingData = getPandasDataset("../Data/labeledCleanedTrainData.tsv")
+        data = []
+        for i in range(0, trainingDataset["review"].size):
+            data.append(cleanedTrainingData["review"][i])
+            if (i + 1) % 500 == 0:
+                print("cleaned review %i of %i" % ((i + 1), trainingDataset['review'].size))
+        cleanedTrainingData = data
+    else:
+        trainingDataset = getPandasDataset('../Data/labeledTrainData.tsv', "\t")
+        cleanedTrainingData = []
+        for i in range(0, trainingDataset["review"].size):
+            cleanedTrainingData.append(cleanDataset(trainingDataset["review"][i]))
+            if (i + 1) % 500 == 0:
+                print("cleaned review %i of %i" % ((i + 1), trainingDataset['review'].size))
+        # export the finished product to a .tsv file
+        dataframe = pandas.DataFrame(cleanedTrainingData)
+        dataframe.columns = ["review"]
+        pandas.DataFrame(dataframe).to_csv("../Data/labeledCleanedTrainData.tsv", sep='\t')
 
-    # export the finished product to a .tsv file
-    pandas.DataFrame(cleanedTrainingData).to_csv("../Data/labeledCleanedTrainData.tsv", sep='\t')
+    # setup vectorizer
+    vectorizer = CountVectorizer(stop_words=None, analyzer="word", tokenizer=None, preprocessor=None,
+                                 max_features=5000)
+    # fit the model then learn the vocabulary - then transform the training data into vectors
+    train_data_features = vectorizer.fit_transform(cleanedTrainingData)
 
-    # begin working with the vectorizer
+    #vocab = vectorizer.get_feature_names()
+    #dist = np.sum(train_data_features, axis=0)
 
-    vectorizer = CountVectorizer()
+    # create a random forest classifier with 100 trees.
+    # Fit the forest to the training set, using the bag of words as
+    # features and the sentiment labels as the response variable
+    forest = RandomForestClassifier(n_estimators = 100, n_jobs=2)
+
+    forest = forest.fit(train_data_features, trainingDataset['sentiment'])
 
 
 def getPandasDataset(csvName, inDelimiter="\,", header=0):
