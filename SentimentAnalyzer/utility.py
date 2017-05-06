@@ -19,7 +19,7 @@ def getPandasDataset(csvName, inDelimiter="\,", header=0):
 
 def printOutResults(inputData, resultData, resultDataName, outputFilename):
     """
-    print out the results of the given data to a .CSV file
+    Print out the results of the given data to a .CSV file
     :param inputData:
     :param resultData:
     :param resultDataName:
@@ -35,7 +35,8 @@ def printOutResults(inputData, resultData, resultDataName, outputFilename):
 
 def polarityToWordZeroToFour(polarity) -> str:
     """
-    change the input polarity to words
+    Currently unimplemented
+    Change the input polarity to words
     :param polarity:
     :return: string
     """
@@ -55,7 +56,8 @@ def polarityToWordZeroToFour(polarity) -> str:
 
 def polarityToWordNegativeOneToOne(polarity) -> str:
     """
-    change the input polarity to words
+    Currently unimplemented
+    Change the input polarity to words
     :param polarity:
     :return: string
     """
@@ -106,17 +108,15 @@ def paragraphToSentences(data, tokenizer, removeStopwords=False):
     rawSentences = tokenizer.tokenize(data.strip())
     sentences = []
     for rawSentence in rawSentences:
-        if len(rawSentence) > 0 and rawSentence != "" and str(rawSentence) != 'nan':
-            # clean up all the non-empty sentences
-            sentences.append(cleanDataset(rawSentence, removeStopwords))
-    # Return the list of sentences
-    # (each sentence is a list of words, so this returns a list of lists)
+            sentences.append(cleanDataset(rawSentence, removeStopwords).split())
+    # Return the list of sentences (each sentence is a list of words, so this returns a list of lists)
     return sentences
 
 
 def getCleanDataset(regularFilename, cleanedFilename) -> pandas.DataFrame:
     """
-
+    Determines if the cleaned filename exists within the file path, pull in the cleaned dataset
+    otherwise gather the data from the regular filepath, clean it, create a cleaned file, the return the cleaned dataset
     :param regularFilename:
     :param cleanedFilename:
     :return: DataFrame containing columns: id, sentiment, cleaned review files

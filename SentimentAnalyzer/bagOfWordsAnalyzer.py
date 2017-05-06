@@ -53,4 +53,4 @@ def bagOfWordsAnalysis(trainingFilename, cleanedTrainingFileName, testingFilenam
 
     # Use pandas to write the comma-separated output file
     print("Bag of Words Classifier output complete")
-    output.to_csv("SentimentClassified.csv", index=False, quoting=3, sep='\t')
+    output.to_csv("BagOfWordsClassified.csv", index=False, quoting=3, sep='\t')

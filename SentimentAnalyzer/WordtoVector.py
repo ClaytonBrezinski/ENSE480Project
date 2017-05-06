@@ -8,7 +8,7 @@ def createWordToVectorModel(cleanedTrainingFileName, unlabeledTrainingFilename, 
                             cleanedUnlabeledTrainingFilename, numberOfFeatures=300,
                             resultingModelName="WordToVectorModel"):
     """
-    this method creates a word to vector model based upon the labeled and unlabeled training data that is presented to it.
+    Create a word to vector model based upon the labeled and unlabeled training data that is presented to it.
     :param numberOfFeatures: the amount of dimensions that we want our word to vector system to build to
     :param resultingModelName: the name of the file that the model will sit in
     :param trainingFilename: the name of the file used for training
@@ -21,7 +21,7 @@ def createWordToVectorModel(cleanedTrainingFileName, unlabeledTrainingFilename, 
     trainingData = utility.getCleanDataset(cleanedTrainingFileName, trainingFilename)
     unlabeledTrainingData = utility.getCleanDataset(cleanedUnlabeledTrainingFilename, unlabeledTrainingFilename)
 
-    # Load the punkt tokenizer from the english language pickle file.
+    # Load the punkt tokenizer from the english language file.
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
     """ Split the labeled and unlabeled training sets into clean sentences """
@@ -40,8 +40,10 @@ def createWordToVectorModel(cleanedTrainingFileName, unlabeledTrainingFilename, 
     for review in unlabeledTrainingData["review"]:
         i += 1
         if i % 1000 == 0:
-            print("% i of %i sentences complete" % (i, len(trainingData)))
+            print("% i of %i sentences complete" % (i, len(unlabeledTrainingData)))
             sentences += utility.paragraphToSentences(data=review, tokenizer=tokenizer)
+
+    print (len(sentences))
 
     """ Set parameters and train the word2vec model """
     # Import the built-in logging module and configure it so that Word2Vec creates nice output messages
@@ -57,13 +59,14 @@ def createWordToVectorModel(cleanedTrainingFileName, unlabeledTrainingFilename, 
     # Initialize and train the model (this will take some time)
     print("Training Word2Vec model...")
     model = Word2Vec(sentences, workers=numberOfWorkers, size=numberOfFeatures, min_count=minimumWordCount,
-                     window=context,
-                     sample=downSampling, seed=1)
+                     window=context, sample=downSampling)
 
     # Since I don't want to train the model any more, lock in everything so that we are process efficient.
     model.init_sims(replace=True)
 
     # Save the model for future, faster use by saving it and then using Word2Vec.load(<FILENAME>) to pick it up later
     modelName = resultingModelName
+
     model.save(modelName)
+
     return model

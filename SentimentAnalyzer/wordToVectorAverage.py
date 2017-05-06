@@ -1,18 +1,17 @@
-import numpy as np  # Make sure that numpy is imported
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from SentimentAnalyzer import utility
 from SentimentAnalyzer import WordtoVector
 from gensim.models import Word2Vec
-import scipy.stats as stats
 
 
 def makeFeatureVector(words, model, numberOfFeatures):
     """
-    Function to average all of the word vectors in a given paragraph
+    Average all of the word vectors in a given paragraph into one vector
     :param words:
     :param model:
     :param numberOfFeatures:
-    :return:
+    :return: the average feature vector
     """
     # Pre-initialize an empty numpy array (for speed)
     featureVec = np.zeros((numberOfFeatures,), dtype="float32")
@@ -32,13 +31,14 @@ def makeFeatureVector(words, model, numberOfFeatures):
 
 def getAvgFeatureVectors(reviews, model, numberOfFeatures):
     """
-    When given a set of reviews, calculate the average vector for each one and return it as a 2D numpy array
+    Given a set of reviews, calculate the average vector for each one and return it as a 2D numpy array
     :param reviews:
     :param model:
     :param numberOfFeatures:
     :return:
     """
     counter = 0
+
     # Preallocate a 2D numpy array, for speed
     reviewFeatureVectors = np.zeros((len(reviews), numberOfFeatures), dtype="float32")
 
@@ -46,17 +46,15 @@ def getAvgFeatureVectors(reviews, model, numberOfFeatures):
     for review in reviews:
         if counter % 1000 == 0.:
             print("Feature vector %i of %d complete" % (counter, len(reviews)))
-
         # Call the function (defined above) that makes average feature vectors
         reviewFeatureVectors[int(counter)] = makeFeatureVector(review, model, numberOfFeatures)
-
         counter += 1
     return reviewFeatureVectors
 
 
 def getCleanReviews(reviews):
     """
-    takes in the given list of reviews and returns a cleaned version of the reviews
+    Takes in the given list of reviews and returns a cleaned version of the reviews
     :param reviews:
     :return:
     """
@@ -71,8 +69,13 @@ def wordToVectorAverage(trainingFilename, cleanedTrainingFilename, unlabeledTrai
                         cleanedUnlabeledTrainingFilename, cleanedTestingFilename, testingFilename,
                         premadeModelName=None):
     """
-    average the vec
+    When testing, create vectors out of each of the words within the given sentence, then get the average of the vectors
+    from the sentence and calculate the sentiment of the sentence.
     :param trainingFilename:
+    :param cleanedTrainingFilename:
+    :param unlabeledTrainingFilename:
+    :param cleanedUnlabeledTrainingFilename:
+    :param cleanedTestingFilename:
     :param testingFilename:
     :param premadeModelName:
     :return:

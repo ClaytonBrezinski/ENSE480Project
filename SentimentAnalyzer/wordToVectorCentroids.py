@@ -1,19 +1,14 @@
-import time
 import numpy as np
 from gensim.models import Word2Vec
 from sklearn.cluster import KMeans
-from SentimentAnalyzer import utility
 from sklearn.ensemble import RandomForestClassifier
+from SentimentAnalyzer import utility
 from SentimentAnalyzer import WordtoVector
-
-"""
-# Define a function to create bags of centroids
-"""
 
 
 def create_bag_of_centroids(wordList, wordCentroidMap):
     """
-    create a bag of centroids based off a given cluster size, and the map containing all words
+    Create a bag of centroids based off a given cluster size, and the map containing all words
     :param wordList:
     :param wordCentroidMap:
     :return:
@@ -26,7 +21,7 @@ def create_bag_of_centroids(wordList, wordCentroidMap):
 
     # Loop over the words in the review. If the word is in the vocabulary, find which cluster it belongs to, and
     # increment that cluster count by one
-    for word in wordList:
+    for word in wordList.split():
         if word in wordCentroidMap:
             index = wordCentroidMap[word]
             bagOfCentroids[index] += 1
@@ -35,12 +30,16 @@ def create_bag_of_centroids(wordList, wordCentroidMap):
     return bagOfCentroids
 
 
-def wordToVectorCentroids(trainingFilename, cleanedTrainingFileName, testingFilename, testingCleanedFilename,
+def wordToVectorCentroids(trainingFilename, cleanedTrainingFileName, unlabeledTrainingFilename,
+                          cleanedUnlabeledTrainingFilename, testingFilename, testingCleanedFilename,
                           premadeModelName=None):
     """
-
+    When testing, create vectors out of each of the words within the given sentence, then through the use of clustering,
+    cluster the vectors into centroids and make a sentiment guess based off of teh centroid data
     :param trainingFilename:
     :param cleanedTrainingFileName:
+    :param unlabeledTrainingFilename:
+    :param cleanedUnlabeledTrainingFilename:
     :param testingFilename:
     :param testingCleanedFilename:
     :param premadeModelName:
@@ -49,29 +48,50 @@ def wordToVectorCentroids(trainingFilename, cleanedTrainingFileName, testingFile
 
     # Read data from files
     cleanTrainData = utility.getCleanDataset(regularFilename=trainingFilename,
-                                                cleanedFilename=cleanedTrainingFileName)
+                                             cleanedFilename=cleanedTrainingFileName)
     cleanTestData = utility.getCleanDataset(regularFilename=testingFilename,
-                                               cleanedFilename=testingCleanedFilename)
+                                            cleanedFilename=testingCleanedFilename)
+
+    cleanTrainData.fillna(value="NOTHING", inplace=True)
+    cleanTestData.fillna(value="NOTHING", inplace=True)
 
     if premadeModelName is not None:
-        premadeModelName  = Word2Vec.load(premadeModelName)
+        print("Using a premade wordToVector model")
+        model = Word2Vec.load(premadeModelName)
     else:
-        premadeModelName = WordtoVector.createWordToVectorModel(300)
+        print("creating a wordToVector model")
+        model = WordtoVector.createWordToVectorModel(cleanedTrainingFileName=cleanedTrainingFileName,
+                                                     trainingFilename=trainingFilename,
+                                                     unlabeledTrainingFilename=unlabeledTrainingFilename,
+                                                     cleanedUnlabeledTrainingFilename=cleanedUnlabeledTrainingFilename,
+                                                     numberOfFeatures=300)
 
     """ Run k-means on the word vectors and print a few clusters """
 
     # Set the number of clusters to be 1/5th of the vocabulary size, or an average of 5 words per cluster
-    wordVectors = premadeModelName.wv.syn0
+    wordVectors = model.wv.syn0
     numberOfClusters = wordVectors.shape[0] // 5
 
     # Initialize a k-means object and use it to extract centroids
-    print("Running K means")
+    print("Running K means clustering ")
 
-    kmeansClustering = KMeans(n_clusters=numberOfClusters)
-    idx = kmeansClustering.fit_predict(wordVectors)
+    kMeansClustering = KMeans(n_clusters=numberOfClusters)
+    idx = kMeansClustering.fit_predict(wordVectors)
 
     # Create a Word / Index dictionary, mapping each vocabulary word to a cluster number
-    wordCentroidMap = dict(zip(premadeModelName.wv.index2word, idx))
+    wordCentroidMap = dict(zip(model.wv.index2word, idx))
+
+    for cluster in range(0, 10):
+        #
+        # Print the cluster number
+        print("\nCluster %d" % cluster)
+        #
+        # Find all of the words for that cluster number, and print them out
+        words = []
+        for word, frequency in wordCentroidMap.items():
+            if frequency == cluster:
+                words.append(word)
+        print(words)
 
     """ Create bags of centroids """
 
@@ -99,5 +119,5 @@ def wordToVectorCentroids(trainingFilename, cleanedTrainingFileName, testingFile
     forest.fit(trainCentroids, cleanTrainData["sentiment"])
     result = forest.predict(testCentroids)
 
-    utility.printOutResults(inputData=cleanTestData["test"], resultData=result, resultDataName="sentiment",
+    utility.printOutResults(inputData=cleanTestData, resultData=result, resultDataName="sentiment",
                             outputFilename="wordToVectorCentroids")
